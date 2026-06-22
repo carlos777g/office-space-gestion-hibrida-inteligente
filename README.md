@@ -1,211 +1,444 @@
-Escenario 1 - OfficeSpace: Gestión Híbrida Inteligente
-1. Contexto del Cliente (El Escenario)
-El Cliente: "Corporativo Alpha", una empresa multinacional que está transicionando a un modelo de trabajo híbrido (presencial/remoto).
+# OfficeSpace - Hybrid Workspace Management System
 
-El Problema: Actualmente gestionan la reserva de salas de juntas y espacios de trabajo ("Hot Desks") mediante un archivo de Excel compartido. Esto ha causado:
+## Table of Contents
+1. [Project Overview](#project-overview)
+2. [Architecture](#architecture)
+3. [Tech Stack](#tech-stack)
+4. [Prerequisites](#prerequisites)
+5. [Installation & Setup](#installation--setup)
+6. [Running the Project](#running-the-project)
+7. [Test Credentials](#test-credentials)
+8. [API Documentation](#api-documentation)
+9. [Service Endpoints](#service-endpoints)
+10. [Database Schema](#database-schema)
+11. [Testing Strategy](#testing-strategy)
+12. [Project Structure](#project-structure)
+13. [Key Technical Decisions](#key-technical-decisions)
 
-Duplicidad de reservas (dos equipos llegando a la misma sala)
-Espacios subutilizados ("No-shows")
-Falta de visibilidad sobre quién está en la oficina
-Ausencia de control de acceso y permisos
-Tu Misión (como Consultor Junior): Desarrollar un MVP (Producto Mínimo Viable) de una aplicación web que digitalice, automatice y optimice la gestión de espacios de Corporativo Alpha.
+---
 
-2. Requerimientos Funcionales (Lo que el sistema DEBE hacer)
-2.1 Sistema de Autenticación y Roles
-IMPORTANTE: El sistema debe implementar un mecanismo de autenticación básico que permita diferenciar entre roles. No se requiere un sistema de login robusto con encriptación avanzada, pero sí debe cumplir:
+## Project Overview
 
-Requisitos Mínimos de Autenticación:
-Login Simulado/Simplificado:
+OfficeSpace is an MVP web application that digitizes and automates workspace management for hybrid work environments. It replaces shared Excel-based booking systems with a real-time reservation platform that prevents double-booking, enforces role-based access, and provides administrators with occupancy visibility.
 
-Pantalla de login con usuario y contraseña
-Validación básica (puede ser contra datos hardcodeados o en BD)
-Generación de token JWT simple para mantener sesión
-Tiempo estimado: No más de 2-3 horas de desarrollo
-Dos Roles Obligatorios:
+**Core problem solved:** Eliminate overlapping reservations, under-utilized spaces, and uncontrolled access to meeting rooms and hot desks.
 
-Administrador: Acceso completo (CRUD de espacios + todas las funciones de Colaborador)
-Colaborador: Solo puede buscar, reservar y gestionar sus propias reservas
-Usuarios de Prueba Predefinidos:
+---
 
-Admin:
-- Usuario: admin@corporativoalpha.com
-- Password: Admin123
-- Rol: ADMINISTRADOR
+## Architecture
 
-Colaboradores:
-- Usuario: carlos.mendez@corporativoalpha.com / Password: User123 / Rol: COLABORADOR
-- Usuario: ana.torres@corporativoalpha.com / Password: User123 / Rol: COLABORADOR
-2.2 Módulo de Gestión (Rol: Administrador)
-CRUD de Espacios: Capacidad de dar de alta salas o escritorios con atributos:
+The system follows a **service-oriented modular architecture** with a shared PostgreSQL database. Two independent backend services communicate via HTTP/REST. This approach was chosen to demonstrate service separation and independent deployability while keeping database transaction complexity manageable within the hackathon scope.
 
-Nombre/ID
-Tipo (Sala de juntas, Escritorio individual)
-Capacidad (personas)
-Recursos (¿Tiene proyector? ¿Tiene aire acondicionado?)
-Piso/Ubicación
-Dashboard de Ocupación: Vista rápida de qué espacios están ocupados el día de hoy
+> **Architectural note:** This is explicitly a shared-database service pattern, not a full microservices architecture (which would require isolated data stores per service). The tradeoff is accepted intentionally: simpler transactions and faster development over strict service autonomy.
 
-2.3 Módulo de Reserva (Rol: Colaborador)
-Buscador de Disponibilidad: El usuario selecciona fecha y hora (inicio/fin) y el sistema muestra solo los espacios disponibles
+```mermaid
+graph TD
+    Client["Frontend (React + Vite)\nPort 5173"]
 
-Motor de Reservas (Lógica Crítica):
+    subgraph Backend Services
+        CS["catalog-service\nPort 3001\nSpace CRUD + Admin Dashboard"]
+        BS["booking-service\nPort 3002\nReservation Engine + Auth"]
+    end
 
-El sistema NO debe permitir reservas encimadas (overlapping) en el mismo espacio
-El sistema debe validar que la fecha de reserva no sea en el pasado
-El sistema debe validar que la capacidad solicitada no exceda la del espacio
-"Mis Reservas": El usuario puede ver su historial y cancelar reservas futuras
+    DB[("PostgreSQL 15\nPort 5432\nShared Database")]
 
-2.4 Requisitos de Interfaz de Usuario (UI/UX)
-IMPORTANTE: Se requieren MÍNIMO 4 pantallas funcionales para garantizar una experiencia completa:
+    Client -->|HTTP REST| CS
+    Client -->|HTTP REST| BS
+    CS -->|SQL| DB
+    BS -->|SQL| DB
 
-Pantallas Obligatorias:
-Pantalla de Login (Simulado)
+    style DB fill:#336791,color:#fff
+    style CS fill:#68a063,color:#fff
+    style BS fill:#68a063,color:#fff
+    style Client fill:#61dafb,color:#000
+```
 
-Formulario simple con usuario/contraseña
-Botón de "Iniciar Sesión"
-Mensaje de error si credenciales inválidas
-Redirección según rol después del login
-Panel de Búsqueda con Filtros
+**Service responsibilities:**
 
-Selector de fecha y rango horario
-Filtros por tipo de espacio (Sala/Escritorio)
-Filtro por capacidad mínima
-Lista de resultados con disponibilidad en tiempo real
-Botón "Reservar" por cada espacio disponible
-Confirmación de Reserva
+| Service | Port | Responsibility |
+|---|---|---|
+| `catalog-service` | 3001 | CRUD of spaces, admin dashboard data, space availability queries |
+| `booking-service` | 3002 | Auth (JWT), reservation engine, overlap validation, user booking history |
+| `frontend` | 5173 | React SPA, all 4 required screens |
+| `postgres` | 5432 | Shared relational database |
 
-Resumen de la reserva (espacio, fecha, hora, capacidad)
-Formulario para ingresar número de asistentes
-Botón "Confirmar Reserva"
-Mensaje de éxito/error
-Opción de "Ver Mis Reservas"
-Vista de Administración (Solo Admin)
+---
 
-Dashboard con ocupación del día
-Tabla de espacios con opciones CRUD
-Formulario para crear/editar espacios
-Estadísticas básicas (opcional pero valorado)
-Criterio de Evaluación UI:
+## Tech Stack
 
-Usabilidad > Estética: Se valora que la navegación sea intuitiva y los flujos estén completos
-Responsive: Debe funcionar en desktop (mobile es opcional)
-Feedback Visual: Mensajes claros de éxito/error en cada acción
-3. Requerimientos Técnicos (Stack Tecnológico)
-3.1 Arquitectura del Sistema
-DECISIÓN ARQUITECTÓNICA EXPLÍCITA:
+| Layer | Technology | Rationale |
+|---|---|---|
+| Frontend | React 18 + Vite + TailwindCSS | Fast build tooling, utility-first CSS, no runtime overhead |
+| Backend | Node.js 20 + Express 4 | Minimal setup, async I/O suits booking workloads |
+| Database | PostgreSQL 15 | ACID transactions required for overlap conflict prevention; native range query support |
+| DB Driver | `pg` (node-postgres) | Raw parameterized queries give explicit control over overlap detection logic |
+| Auth | JWT (jsonwebtoken) | Stateless, sufficient for MVP scope |
+| API Docs | swagger-jsdoc + swagger-ui-express | Auto-generated interactive docs at `/api-docs` |
+| Containers | Docker + docker-compose | Single-command project startup |
+| Package Manager | pnpm | Faster installs, disk-efficient with workspaces |
 
-El sistema debe implementarse como Microservicios con Base de Datos Compartida (Arquitectura Híbrida). Esta decisión se toma considerando:
+---
 
-✅ Ventajas para el Hackathon:
+## Prerequisites
 
-Menor complejidad de configuración
-Transacciones más simples entre servicios
-Tiempo de desarrollo reducido
-Facilita el debugging
-📚 Aprendizaje de Conceptos:
+- Docker Engine 24+
+- Docker Compose v2+
+- Node.js 20+ (for local development without Docker)
+- pnpm 9+ (`npm install -g pnpm`)
+- Git
 
-Separación de responsabilidades por servicio
-Comunicación entre servicios vía HTTP/REST
-Despliegue independiente de servicios
-Escalabilidad horizontal
-Estructura de Servicios Requerida:
-/officespace-starter-2026
-│
-├── /catalog-service          # Microservicio A: Gestión de Espacios
-│   ├── /src
-│   │   ├── /controllers
-│   │   ├── /models
-│   │   ├── /routes
-│   │   └── /services
-│   ├── package.json
+Verify your environment:
+```bash
+docker --version
+docker compose version
+node --version
+pnpm --version
+```
+
+---
+
+## Installation & Setup
+
+### Option A: Docker (Recommended - Single Command)
+
+```bash
+# Clone the repository
+git clone https://github.com/YOUR_USERNAME/officespace-2026.git
+cd officespace-2026
+
+# Start all services (database + both backends + frontend)
+docker compose up --build
+
+# On first run, the database is initialized automatically via shared-infra/init-db.sql
+```
+
+Wait for all services to report healthy, then access:
+- Frontend: http://localhost:5173
+- catalog-service Swagger: http://localhost:3001/api-docs
+- booking-service Swagger: http://localhost:3002/api-docs
+
+### Option B: Local Development (Without Docker)
+
+**1. Start PostgreSQL**
+```bash
+# If PostgreSQL is installed locally on Debian
+sudo service postgresql start
+
+# Create the database
+psql -U postgres -c "CREATE DATABASE officespace_db;"
+psql -U postgres -d officespace_db -f shared-infra/init-db.sql
+```
+
+**2. Install dependencies**
+```bash
+# From project root
+pnpm install
+```
+
+**3. Configure environment variables**
+```bash
+# Copy and edit .env files for each service
+cp catalog-service/.env.example catalog-service/.env
+cp booking-service/.env.example booking-service/.env
+cp frontend/.env.example frontend/.env
+```
+
+**4. Start services (3 separate terminals)**
+```bash
+# Terminal 1
+cd catalog-service && pnpm dev
+
+# Terminal 2
+cd booking-service && pnpm dev
+
+# Terminal 3
+cd frontend && pnpm dev
+```
+
+---
+
+## Running the Project
+
+```bash
+# Start everything
+docker compose up --build
+
+# Start in background (detached)
+docker compose up -d --build
+
+# Stop everything
+docker compose down
+
+# Stop and remove database volumes (full reset)
+docker compose down -v
+
+# View logs for a specific service
+docker compose logs -f booking-service
+docker compose logs -f catalog-service
+```
+
+---
+
+## Test Credentials
+
+The database is seeded with the following users on initialization:
+
+| Role | Email | Password |
+|---|---|---|
+| Administrator | admin@corporativoalpha.com | Admin123 |
+| Collaborator | carlos.mendez@corporativoalpha.com | User123 |
+| Collaborator | ana.torres@corporativoalpha.com | User123 |
+
+---
+
+## API Documentation
+
+Interactive Swagger UI is available when the project is running:
+
+- **catalog-service:** http://localhost:3001/api-docs
+- **booking-service:** http://localhost:3002/api-docs
+
+All endpoints require a `Bearer` token in the `Authorization` header, except `POST /auth/login`.
+
+**Quick auth flow:**
+```bash
+# 1. Get a token
+curl -X POST http://localhost:3002/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "carlos.mendez@corporativoalpha.com", "password": "User123"}'
+
+# 2. Use the returned token in subsequent requests
+curl http://localhost:3001/spaces \
+  -H "Authorization: Bearer YOUR_TOKEN_HERE"
+```
+
+---
+
+## Service Endpoints
+
+### catalog-service (Port 3001)
+
+| Method | Path | Role Required | Description |
+|---|---|---|---|
+| GET | /spaces | Collaborator, Admin | List all spaces with optional filters |
+| GET | /spaces/:id | Collaborator, Admin | Get single space details |
+| POST | /spaces | Admin | Create a new space |
+| PUT | /spaces/:id | Admin | Update a space |
+| DELETE | /spaces/:id | Admin | Delete a space |
+| GET | /spaces/availability | Collaborator, Admin | Find available spaces for a given time window |
+| GET | /dashboard/today | Admin | Occupancy summary for today |
+
+### booking-service (Port 3002)
+
+| Method | Path | Role Required | Description |
+|---|---|---|---|
+| POST | /auth/login | Public | Authenticate user, returns JWT |
+| GET | /bookings/my | Collaborator, Admin | Get current user's bookings |
+| POST | /bookings | Collaborator, Admin | Create a reservation |
+| DELETE | /bookings/:id | Collaborator, Admin | Cancel own reservation (admin can cancel any) |
+
+---
+
+## Database Schema
+
+```sql
+-- Users table
+users (
+  id          SERIAL PRIMARY KEY,
+  email       VARCHAR(255) UNIQUE NOT NULL,
+  password    VARCHAR(255) NOT NULL,         -- bcrypt hash
+  role        VARCHAR(20) NOT NULL,          -- 'ADMIN' | 'COLLABORATOR'
+  full_name   VARCHAR(255) NOT NULL,
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+)
+
+-- Spaces table
+spaces (
+  id          SERIAL PRIMARY KEY,
+  name        VARCHAR(255) NOT NULL,
+  type        VARCHAR(20) NOT NULL,          -- 'SALA' | 'DESK'
+  capacity    INTEGER NOT NULL,
+  floor       VARCHAR(50),
+  has_projector    BOOLEAN DEFAULT FALSE,
+  has_ac           BOOLEAN DEFAULT FALSE,
+  is_active   BOOLEAN DEFAULT TRUE,
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+)
+
+-- Bookings table
+bookings (
+  id          SERIAL PRIMARY KEY,
+  space_id    INTEGER NOT NULL REFERENCES spaces(id),
+  user_id     INTEGER NOT NULL REFERENCES users(id),
+  start_time  TIMESTAMPTZ NOT NULL,
+  end_time    TIMESTAMPTZ NOT NULL,
+  attendees   INTEGER NOT NULL,
+  status      VARCHAR(20) DEFAULT 'ACTIVE',  -- 'ACTIVE' | 'CANCELLED'
+  created_at  TIMESTAMPTZ DEFAULT NOW(),
+
+  -- Database-level constraint: end must be after start
+  CONSTRAINT chk_time_order CHECK (end_time > start_time)
+)
+
+-- Index to optimize overlap detection queries
+CREATE INDEX idx_bookings_space_time
+  ON bookings (space_id, start_time, end_time)
+  WHERE status = 'ACTIVE';
+```
+
+**Overlap detection query (the critical logic):**
+```sql
+SELECT id FROM bookings
+WHERE space_id = $1
+  AND status = 'ACTIVE'
+  AND start_time < $3    -- new booking's end_time
+  AND end_time > $2;     -- new booking's start_time
+-- If this returns any row, the new booking must be rejected with 409 Conflict.
+```
+
+---
+
+## Testing Strategy
+
+### Priority Order (hackathon scope)
+
+1. **Postman Collection** — `docs/postman_collection.json`
+   - Automated test scripts on each request
+   - Covers all critical paths and edge cases
+   - Can be run with Newman: `newman run docs/postman_collection.json`
+
+2. **Manual Test Cases** — `docs/test-cases.md`
+   - 10+ documented scenarios with preconditions, steps, and expected results
+   - Covers overlap logic, auth enforcement, capacity validation
+
+3. **Gherkin Scenarios** — `docs/features/`
+   - BDD scenarios for the 5 critical business rules
+   - Written in English, executable via Cucumber if time permits
+
+4. **Supertest Integration Tests** — `booking-service/src/__tests__/`
+   - Unit tests for the overlap detection logic
+   - Run with: `pnpm test` inside booking-service
+
+### Critical Test Scenarios
+
+| ID | Scenario | Expected Result |
+|---|---|---|
+| TC-001 | Book space A from 09:00-10:00, then attempt 09:30-10:30 | 409 Conflict |
+| TC-002 | Book space A from 09:00-10:00, then attempt 10:00-11:00 (consecutive) | 201 Created (no overlap) |
+| TC-003 | Attempt to book with end_time before start_time | 400 Bad Request |
+| TC-004 | Attempt to book a past date/time | 400 Bad Request |
+| TC-005 | Book a space for more attendees than capacity | 400 Bad Request |
+| TC-006 | POST /bookings without Authorization header | 401 Unauthorized |
+| TC-007 | POST /spaces as COLLABORATOR role | 403 Forbidden |
+| TC-008 | DELETE /bookings/:id for a booking owned by another user (as collaborator) | 403 Forbidden |
+| TC-009 | GET /spaces with capacity filter (e.g. minimum 6) | Only spaces with capacity >= 6 |
+| TC-010 | Cancel a booking and rebook the same slot | 201 Created |
+
+---
+
+## Project Structure
+
+```
+officespace-2026/
+├── catalog-service/
+│   ├── src/
+│   │   ├── controllers/
+│   │   │   ├── spaces.controller.js
+│   │   │   └── dashboard.controller.js
+│   │   ├── routes/
+│   │   │   ├── spaces.routes.js
+│   │   │   └── dashboard.routes.js
+│   │   ├── services/
+│   │   │   └── spaces.service.js
+│   │   ├── middleware/
+│   │   │   └── auth.middleware.js
+│   │   ├── db/
+│   │   │   └── pool.js
+│   │   └── app.js
+│   ├── .env.example
 │   ├── Dockerfile
+│   ├── package.json
 │   └── README.md
 │
-├── /booking-service          # Microservicio B: Motor de Reservas
-│   ├── /src
-│   │   ├── /controllers
-│   │   ├── /models
-│   │   ├── /routes
-│   │   ├── /services
-│   │   └── /validators      # Validaciones críticas
-│   ├── package.json
+├── booking-service/
+│   ├── src/
+│   │   ├── controllers/
+│   │   │   ├── auth.controller.js
+│   │   │   └── bookings.controller.js
+│   │   ├── routes/
+│   │   │   ├── auth.routes.js
+│   │   │   └── bookings.routes.js
+│   │   ├── services/
+│   │   │   ├── auth.service.js
+│   │   │   └── bookings.service.js
+│   │   ├── validators/
+│   │   │   └── booking.validator.js
+│   │   ├── middleware/
+│   │   │   └── auth.middleware.js
+│   │   ├── db/
+│   │   │   └── pool.js
+│   │   └── app.js
+│   ├── .env.example
 │   ├── Dockerfile
+│   ├── package.json
 │   └── README.md
 │
-├── /auth-service             # Microservicio C: Autenticación (OPCIONAL)
-│   └── (Si el equipo decide separar la autenticación)
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── ProtectedRoute.jsx
+│   │   │   └── Navbar.jsx
+│   │   ├── pages/
+│   │   │   ├── LoginPage.jsx
+│   │   │   ├── SearchPage.jsx
+│   │   │   ├── BookingConfirmPage.jsx
+│   │   │   ├── MyBookingsPage.jsx
+│   │   │   └── AdminPage.jsx
+│   │   ├── services/
+│   │   │   ├── api.js
+│   │   │   ├── auth.service.js
+│   │   │   └── booking.service.js
+│   │   ├── utils/
+│   │   │   └── token.js
+│   │   ├── App.jsx
+│   │   └── main.jsx
+│   ├── .env.example
+│   ├── Dockerfile
+│   ├── index.html
+│   ├── tailwind.config.js
+│   └── package.json
 │
-├── /frontend                 # Aplicación Web
-│   ├── /public
-│   ├── /src
-│   │   ├── /components
-│   │   ├── /pages           # Las 4 pantallas mínimas
-│   │   ├── /services        # API clients
-│   │   └── /utils
-│   ├── package.json
-│   └── Dockerfile
+├── shared-infra/
+│   ├── init-db.sql
+│   └── scripts/
+│       └── seed.sql
 │
-├── /shared-infra             # Configuración Común
-│   ├── init-db.sql          # Script de inicialización DB
-│   └── /scripts
+├── docs/
+│   ├── ARCHITECTURE.md
+│   ├── API_CONTRACT.md
+│   ├── test-cases.md
+│   ├── features/
+│   │   └── booking_overlap.feature
+│   └── postman_collection.json
 │
-├── docker-compose.yml        # Orquestación de contenedores
-└── README.md                 # Documentación principal
-NOTA IMPORTANTE: Aunque los servicios comparten la misma base de datos PostgreSQL, cada servicio debe:
+├── docker-compose.yml
+├── .gitignore
+├── pnpm-workspace.yaml
+└── README.md
+```
 
-Tener su propio puerto y proceso independiente
-Comunicarse con otros servicios vía HTTP (no acceso directo a funciones)
-Poder desplegarse y escalarse de forma independiente
-Tener su propio Dockerfile
-3.2 Stack Tecnológico
-Backend: Libre elección (Node.js, Python, Java, C#/.NET, Go)
+---
 
-Se valorará el uso de arquitecturas limpias (MVC, Hexagonal, etc.)
-Obligatorio: Implementar middleware de autenticación JWT
-Frontend: Libre elección (React, Angular, Vue, o HTML/CSS/JS puro)
+## Key Technical Decisions
 
-Se valora la usabilidad (UX) más que la estética visual avanzada
-Obligatorio: Implementar las 4 pantallas mínimas especificadas
-Base de Datos: Relacional (MySQL/PostgreSQL/SQL Server) o NoSQL (MongoDB/Firebase)
+### Why PostgreSQL over MongoDB
+Overlap detection requires a query of the form `start_time < new_end AND end_time > new_start`. PostgreSQL handles this with a compound index on `(space_id, start_time, end_time)`. Equally important: concurrent booking requests require ACID transactions to prevent two simultaneous requests from both passing the overlap check before either is written. PostgreSQL's row-level locking handles this correctly with `SELECT FOR UPDATE`. MongoDB would require application-level locking or multi-document transactions, adding complexity without benefit.
 
-Requisito: Debe existir un diagrama de entidad-relación (o esquema de documentos) lógico
-Recomendado: PostgreSQL 15+ (incluido en el starter kit)
-Repositorio: Todo el código debe estar en GitHub/GitLab con un historial de commits claro
+### Why raw `pg` over an ORM (Sequelize/Prisma)
+The overlap query is the most critical piece of logic in the system. An ORM abstraction would obscure whether the generated SQL is correct. With raw parameterized queries, the overlap condition is explicit, auditable, and testable in isolation via psql.
 
-3.3 Documentación de API (OBLIGATORIO)
-NUEVO REQUISITO: Para facilitar la comunicación Dev-QA y la evaluación, se requiere:
+### Why auth is in booking-service, not a separate service
+The spec marks `auth-service` as optional. Separating auth into its own service would require catalog-service to make an HTTP call to validate every JWT, adding a network hop and a failure point. Instead, both services share the same JWT secret via environment variable and validate tokens locally. This is the correct tradeoff for a time-constrained MVP.
 
-Swagger/OpenAPI Specification:
-
-Documentación interactiva de todos los endpoints
-Debe estar accesible en /api-docs cuando se levante el proyecto
-Incluir ejemplos de request/response para cada endpoint
-Herramientas Aceptadas:
-
-Swagger UI (Node.js: swagger-jsdoc + swagger-ui-express)
-Springdoc (Java/Spring Boot)
-FastAPI (Python - genera Swagger automáticamente)
-NSwag (C#/.NET)
-Contenido Mínimo de la Documentación:
-
-Descripción de cada endpoint
-Parámetros requeridos y opcionales
-Códigos de respuesta HTTP (200, 400, 401, 404, 409, 500)
-Modelos de datos (schemas)
-Ejemplos de uso
-Beneficio: QA puede comenzar a diseñar pruebas en paralelo al desarrollo, y los jueces pueden evaluar la API sin necesidad de leer código.
-
-4. Starter Kit: OfficeSpace - Gestión Híbrida Inteligente
-4.1 Estructura de Archivos Recomendada
-/officespace-starter-2026
-│
-├── /catalog-service          # Microservicio A (Lista de salas/escritorios)
-├── /booking-service          # Microservicio B (Motor de reservas y lógica)
-├── /frontend                 # Aplicación Web React/Vue/Angular
-├── /shared-infra             # Configuración común
-│   └── init-db.sql          # Script de base de datos
-├── /docs                     # Documentación técnica
-│   ├── ARCHITECTURE.md      # Decisiones arquitectónicas
-│   └── API_CONTRACT.md      # Contrato de API
-├── docker-compose.yml        # Orquestación de contenedores
-└── README.md                 # Manual de instrucciones
+### Consecutive bookings boundary condition
+The overlap condition `start_time < end_time_existing AND end_time > start_time_existing` correctly allows consecutive bookings. A booking from 09:00-10:00 and another from 10:00-11:00 do not overlap because `10:00 < 10:00` is false. This is the intended behavior: the end of one slot is the exclusive boundary.
