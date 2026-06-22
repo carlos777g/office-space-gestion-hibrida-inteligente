@@ -1,9 +1,14 @@
 {
   "name": "ibm-one-scenary",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "OfficeSpace - Hybrid Workspace Management System",
+  "private": true,
   "scripts": {
+    "dev": "pnpm -r --parallel run dev",
+    "dev:catalog": "pnpm --filter catalog-service dev",
+    "dev:booking": "pnpm --filter booking-service dev",
+    "dev:frontend": "pnpm --filter client dev",
+    "build": "pnpm --filter client build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

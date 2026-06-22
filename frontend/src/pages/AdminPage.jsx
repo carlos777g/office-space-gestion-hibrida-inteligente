@@ -125,8 +125,39 @@ export default function AdminPage() {
             </h2>
             <div className="mt-3 grid grid-cols-3 gap-4">
               <Stat label="Total" value={dashboard?.summary.total ?? 0} tone="slate" />
-              <Stat label="Ocupados" value={dashboard?.summary.occupied ?? 0} tone="indigo" />
+              <Stat label="Ocupados ahora" value={dashboard?.summary.occupied ?? 0} tone="indigo" />
               <Stat label="Libres" value={dashboard?.summary.free ?? 0} tone="emerald" />
+            </div>
+
+            {/* Per-space occupancy: quick view of who/what is busy today */}
+            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {(dashboard?.spaces ?? []).map((s) => (
+                <div
+                  key={s.id}
+                  className={`flex items-center justify-between rounded-lg border p-3 ${
+                    s.is_occupied_now
+                      ? 'border-indigo-200 bg-indigo-50'
+                      : 'border-slate-200 bg-white'
+                  }`}
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-slate-900">{s.name}</p>
+                    <p className="text-xs text-slate-500">
+                      {s.type} · {s.floor || 'Sin piso'} · {s.booking_count} reserva
+                      {Number(s.booking_count) === 1 ? '' : 's'} hoy
+                    </p>
+                  </div>
+                  <span
+                    className={`ml-3 shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${
+                      s.is_occupied_now
+                        ? 'bg-indigo-600 text-white'
+                        : 'bg-emerald-100 text-emerald-700'
+                    }`}
+                  >
+                    {s.is_occupied_now ? 'Ocupado' : 'Libre'}
+                  </span>
+                </div>
+              ))}
             </div>
           </section>
 

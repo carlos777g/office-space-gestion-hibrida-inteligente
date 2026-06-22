@@ -2,18 +2,20 @@
 
 ## Table of Contents
 1. [Project Overview](#project-overview)
-2. [Architecture](#architecture)
-3. [Tech Stack](#tech-stack)
-4. [Prerequisites](#prerequisites)
-5. [Installation & Setup](#installation--setup)
-6. [Running the Project](#running-the-project)
-7. [Test Credentials](#test-credentials)
-8. [API Documentation](#api-documentation)
-9. [Service Endpoints](#service-endpoints)
-10. [Database Schema](#database-schema)
-11. [Testing Strategy](#testing-strategy)
-12. [Project Structure](#project-structure)
-13. [Key Technical Decisions](#key-technical-decisions)
+2. [Business Rules](#business-rules)
+3. [Architecture](#architecture)
+4. [Tech Stack](#tech-stack)
+5. [Prerequisites](#prerequisites)
+6. [Installation & Setup](#installation--setup)
+7. [Running the Project](#running-the-project)
+8. [Test Credentials](#test-credentials)
+9. [API Documentation](#api-documentation)
+10. [Service Endpoints](#service-endpoints)
+11. [Database Schema](#database-schema)
+12. [User Guide](#user-guide)
+13. [Testing Strategy](#testing-strategy)
+14. [Project Structure](#project-structure)
+15. [Key Technical Decisions](#key-technical-decisions)
 
 ---
 
@@ -22,6 +24,25 @@
 OfficeSpace is an MVP web application that digitizes and automates workspace management for hybrid work environments. It replaces shared Excel-based booking systems with a real-time reservation platform that prevents double-booking, enforces role-based access, and provides administrators with occupancy visibility.
 
 **Core problem solved:** Eliminate overlapping reservations, under-utilized spaces, and uncontrolled access to meeting rooms and hot desks.
+
+**Problems addressed:**
+- Lack of visibility over which spaces are occupied today → admin occupancy dashboard.
+- Absence of access control and permissions → JWT auth + role-based routes (ADMIN vs COLLABORATOR).
+- Double-booking → real-time overlap detection at reservation time.
+
+---
+
+## Business Rules
+
+These rules are enforced server-side (booking-service validators + catalog-service) and reflected in the UI:
+
+1. **Capacity validation** — you cannot book a space for more attendees than its capacity (e.g. 6 people in a room for 4 → `400`).
+2. **Schedule validation (the core)** — a reservation is rejected if the space is already booked in that interval. Example: if someone booked 09:00–10:00, you cannot book 09:30–11:00 → `409 Conflict`.
+3. **Temporal consistency** — `end_time` cannot be earlier than (or equal to) `start_time` → `400`.
+4. **Date validation** — reservations cannot be created in the past → `400`.
+5. **Authentication & authorization** — only authenticated users can create reservations; only administrators can manage (create/update/delete) spaces → `401` / `403`.
+
+> **Boundary rule:** consecutive bookings are allowed. 09:00–10:00 and 10:00–11:00 do **not** overlap, because the overlap test (`existing.start < new.end AND existing.end > new.start`) treats the slot end as an exclusive boundary.
 
 ---
 
@@ -143,16 +164,20 @@ cp booking-service/.env.example booking-service/.env
 cp frontend/.env.example frontend/.env
 ```
 
-**4. Start services (3 separate terminals)**
+**4. Start everything with a single command (from project root)**
 ```bash
-# Terminal 1
-cd catalog-service && pnpm dev
+# Runs catalog-service, booking-service and frontend in parallel
+pnpm dev
+```
 
-# Terminal 2
-cd booking-service && pnpm dev
+This uses pnpm workspaces (`pnpm -r --parallel run dev`) — no extra terminals needed.
+Logs from the three processes are prefixed by package name.
 
-# Terminal 3
-cd frontend && pnpm dev
+Or start each service individually:
+```bash
+pnpm dev:catalog     # catalog-service  -> http://localhost:3001
+pnpm dev:booking     # booking-service  -> http://localhost:3002
+pnpm dev:frontend    # frontend (Vite)  -> http://localhost:5173
 ```
 
 ---
@@ -295,6 +320,39 @@ WHERE space_id = $1
   AND end_time > $2;     -- new booking's start_time
 -- If this returns any row, the new booking must be rejected with 409 Conflict.
 ```
+
+---
+
+## User Guide
+
+### 1. Logging in
+1. Open the frontend at http://localhost:5173.
+2. Enter your email and password (see [Test Credentials](#test-credentials)).
+3. On success you are redirected to **Buscar** (Search). Your session (JWT) is stored in the browser and attached automatically to every request.
+4. Use **Salir** (top-right) to log out at any time.
+
+### 2. Searching and booking a space (Collaborator & Admin)
+1. Go to **Buscar**.
+2. Pick a **date**, **start** and **end** time, and optionally filter by **type** (Sala/Escritorio) or **minimum capacity**.
+3. Click **Buscar** — only spaces that are *free* for that exact window are listed (overlapping ones are hidden).
+4. Click **Reservar** on a space to open the confirmation screen.
+5. Set the **number of attendees** (must not exceed the space capacity) and click **Confirmar reserva**.
+   - If someone reserved the same slot in the meantime, you get a clear conflict message (`409`) — pick another time.
+6. You are redirected to **Mis reservas**, where the new booking appears.
+
+### 3. Managing your bookings
+1. Go to **Mis reservas** to see all your reservations (active and cancelled).
+2. Click **Cancelar** on an active booking to release the slot. Cancelled slots become bookable again immediately.
+
+### 4. Administering spaces (Admin only)
+The **Admin** tab only appears for users with the `ADMIN` role.
+1. **Occupancy dashboard** — top of the page shows today's totals (total / occupied now / free) plus a per-space card grid marking each space as **Ocupado** or **Libre**, with its booking count for the day.
+2. **Spaces table** — full list of spaces with capacity, floor and equipment.
+3. **Create** — click **Nuevo espacio**, fill the form (name, type, capacity, floor, projector, A/C) and **Guardar**.
+4. **Edit** — click **Editar** on a row to update any field.
+5. **Delete** — click **Eliminar** (soft delete; booking history is preserved).
+
+> Collaborators who try to reach `/admin` are redirected to Search, and admin-only API calls return `403`.
 
 ---
 
