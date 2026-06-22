@@ -138,6 +138,14 @@ Wait for all services to report healthy, then access:
 - catalog-service Swagger: http://localhost:3001/api-docs
 - booking-service Swagger: http://localhost:3002/api-docs
 
+> **Port 5432 already in use?** If you already run PostgreSQL locally, the
+> container can't bind the host's 5432 and the stack aborts. Just move the host
+> port (the app keeps working — services talk to the DB over the internal docker
+> network regardless):
+> ```bash
+> POSTGRES_HOST_PORT=5433 docker compose up --build
+> ```
+
 ### Option B: Local Development (Without Docker)
 
 **1. Start PostgreSQL**

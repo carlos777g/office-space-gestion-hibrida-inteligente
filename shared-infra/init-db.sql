@@ -99,19 +99,19 @@ CREATE INDEX idx_bookings_today
 INSERT INTO users (email, password_hash, role, full_name) VALUES
 (
     'admin@corporativoalpha.com',
-    '$2b$10$rQnUz9FBaqYFnBbgLqxFAOjWGYDEBp0k7ZZqQXgxLMxaOzqF5GQZy',
+    '$2b$10$ZD.LPriTExjhVDlIzNMfL.FF7qBqkEIv8vb4ZBbodlKm917GeSU8G',  -- Admin123
     'ADMIN',
     'Administrador Sistema'
 ),
 (
     'carlos.mendez@corporativoalpha.com',
-    '$2b$10$rQnUz9FBaqYFnBbgLqxFAOjWGYDEBp0k7ZZqQXgxLMxaOzqF5GQZy',
+    '$2b$10$x9/xZ16y2CQSF4ZMrGwKUu7Er/8Y24KO4blSOUomBQxy9z/p3nGoa',  -- User123
     'COLLABORATOR',
     'Carlos Mendez'
 ),
 (
     'ana.torres@corporativoalpha.com',
-    '$2b$10$rQnUz9FBaqYFnBbgLqxFAOjWGYDEBp0k7ZZqQXgxLMxaOzqF5GQZy',
+    '$2b$10$x9/xZ16y2CQSF4ZMrGwKUu7Er/8Y24KO4blSOUomBQxy9z/p3nGoa',  -- User123
     'COLLABORATOR',
     'Ana Torres'
 );

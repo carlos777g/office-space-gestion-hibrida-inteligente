@@ -1,14 +1,20 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const swaggerUi = require('swagger-ui-express');
 
 const spacesRoutes    = require('./src/routes/spaces.routes');
 const dashboardRoutes = require('./src/routes/dashboard.routes');
+const swaggerSpec     = require('./src/swagger');
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
+
+// API docs (interactive)
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.get('/api-docs.json', (req, res) => res.json(swaggerSpec));
 
 // Routes
 app.use('/spaces',    spacesRoutes);
