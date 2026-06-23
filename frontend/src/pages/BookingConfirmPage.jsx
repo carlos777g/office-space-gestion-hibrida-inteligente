@@ -104,7 +104,7 @@ export default function BookingConfirmPage() {
             <button
               type="button"
               onClick={() => navigate(-1)}
-              className="flex-1 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              className="cursor-pointer flex-1 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
             >
               Volver
             </button>
@@ -112,7 +112,7 @@ export default function BookingConfirmPage() {
               type="button"
               onClick={handleConfirm}
               disabled={loading}
-              className="flex-1 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
+              className="cursor-pointer flex-1 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
             >
               {loading ? 'Reservando…' : 'Confirmar reserva'}
             </button>

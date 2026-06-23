@@ -138,7 +138,7 @@ export default function AdminPage() {
                   key={s.id}
                   type="button"
                   onClick={() => setScheduleSpace(s)}
-                  className={`flex items-center justify-between rounded-lg border p-3 text-left transition hover:shadow-sm ${
+                  className={`cursor-pointer flex items-center justify-between rounded-lg border p-3 text-left transition hover:shadow-sm ${
                     s.is_occupied_now
                       ? 'border-indigo-200 bg-indigo-50 hover:border-indigo-300'
                       : 'border-slate-200 bg-white hover:border-slate-300'
@@ -183,7 +183,7 @@ export default function AdminPage() {
               <button
                 type="button"
                 onClick={openNew}
-                className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+                className="cursor-pointer rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
               >
                 Nuevo espacio
               </button>
@@ -218,14 +218,14 @@ export default function AdminPage() {
                           <button
                             type="button"
                             onClick={() => openEdit(s)}
-                            className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                            className="cursor-pointer rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
                           >
                             Editar
                           </button>
                           <button
                             type="button"
                             onClick={() => handleDelete(s)}
-                            className="rounded-md border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50"
+                            className="cursor-pointer rounded-md border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50"
                           >
                             Eliminar
                           </button>
@@ -304,14 +304,14 @@ export default function AdminPage() {
               <button
                 type="button"
                 onClick={closeForm}
-                className="flex-1 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                className="cursor-pointer flex-1 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
                 disabled={saving}
-                className="flex-1 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
+                className="cursor-pointer flex-1 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
               >
                 {saving ? 'Guardando…' : 'Guardar'}
               </button>
@@ -396,7 +396,7 @@ function ScheduleModal({ space, onClose }) {
           <button
             type="button"
             onClick={onClose}
-            className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            className="cursor-pointer w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
           >
             Cerrar
           </button>

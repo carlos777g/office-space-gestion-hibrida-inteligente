@@ -116,7 +116,7 @@ export default function MyBookingsPage() {
                           type="button"
                           onClick={() => handleCancel(b.id)}
                           disabled={cancelingId === b.id}
-                          className="rounded-md border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-60"
+                          className="cursor-pointer rounded-md border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-60"
                         >
                           {cancelingId === b.id ? 'Cancelando…' : 'Cancelar'}
                         </button>
