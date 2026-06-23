@@ -479,14 +479,6 @@ officespace-2026/
 │   └── scripts/
 │       └── seed.sql
 │
-├── docs/
-│   ├── ARCHITECTURE.md
-│   ├── API_CONTRACT.md
-│   ├── test-cases.md
-│   ├── features/
-│   │   └── booking_overlap.feature
-│   └── postman_collection.json
-│
 ├── docker-compose.yml
 ├── .gitignore
 ├── pnpm-workspace.yaml
