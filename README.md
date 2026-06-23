@@ -48,7 +48,7 @@ These rules are enforced server-side (booking-service validators + catalog-servi
 
 ## Architecture
 
-The system follows a **service-oriented modular architecture** with a shared PostgreSQL database. Two independent backend services communicate via HTTP/REST. This approach was chosen to demonstrate service separation and independent deployability while keeping database transaction complexity manageable within the hackathon scope.
+The system follows a **service-oriented modular architecture** with a shared PostgreSQL database. Two independent backend services communicate via HTTP/REST. This approach was chosen to demonstrate service separation and independent deployability while keeping database transaction complexity manageable within the requirements scope.
 
 > **Architectural note:** This is explicitly a shared-database service pattern, not a full microservices architecture (which would require isolated data stores per service). The tradeoff is accepted intentionally: simpler transactions and faster development over strict service autonomy.
 
@@ -89,7 +89,7 @@ graph TD
 
 | Layer | Technology | Rationale |
 |---|---|---|
-| Frontend | React 18 + Vite + TailwindCSS | Fast build tooling, utility-first CSS, no runtime overhead |
+| Frontend | React 19 + Vite + TailwindCSS | Fast build tooling, utility-first CSS, no runtime overhead |
 | Backend | Node.js 20 + Express 4 | Minimal setup, async I/O suits booking workloads |
 | Database | PostgreSQL 15 | ACID transactions required for overlap conflict prevention; native range query support |
 | DB Driver | `pg` (node-postgres) | Raw parameterized queries give explicit control over overlap detection logic |
@@ -124,7 +124,7 @@ pnpm --version
 
 ```bash
 # Clone the repository
-git clone https://github.com/YOUR_USERNAME/officespace-2026.git
+git clone https://github.com/carlos777g/office-space-gestion-hibrida-inteligente.git
 cd officespace-2026
 
 # Start all services (database + both backends + frontend)
@@ -366,7 +366,7 @@ The **Admin** tab only appears for users with the `ADMIN` role.
 
 ## Testing Strategy
 
-### Priority Order (hackathon scope)
+### Priority Order (requirements scope)
 
 1. **Postman Collection** — `docs/postman_collection.json`
    - Automated test scripts on each request
@@ -379,7 +379,7 @@ The **Admin** tab only appears for users with the `ADMIN` role.
 
 3. **Gherkin Scenarios** — `docs/features/`
    - BDD scenarios for the 5 critical business rules
-   - Written in English, executable via Cucumber if time permits
+   - Executable via Cucumber if time permits
 
 4. **Supertest Integration Tests** — `booking-service/src/__tests__/`
    - Unit tests for the overlap detection logic
